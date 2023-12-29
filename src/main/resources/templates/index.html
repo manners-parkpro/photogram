@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photogram</title>
+    <!-- Style -->
+    <link rel="stylesheet" type="text/css" href="/static/css/home.css" th:href="@{/css/home.css}">
+    <!-- Fontawesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.8.2/css/all.min.css" />
+</head>
+
+<body>
+    <header class="header">
+        <div class="container">
+            <a th:href="@{/}" class="logo"><img src="/static/images/logo.jpg" th:src="@{/images/logo.jpg}" alt=""></a>
+            <nav class="navi">
+                <ul class="navi-list">
+                    <li class="navi-item"><a th:href="@{/}"><i class="fas fa-home"></i></a></li>
+                    <li class="navi-item"><a th:href="@{/explor}"><i class="far fa-compass"></i></a></li>
+                    <li class="navi-item"><a th:href="@{/user/profile/{id}(id = ${user.id})}"><i class="far fa-user"></i></a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    <main class="main">
+        <input type="hidden" name="page" th:value="${pages.pageable.getPageNumber()}" />
+        <input type="hidden" name="hasData" value="Y" />
+
+        <section class="container">
+
+            <article class="story-list">
+
+                <div class="story-list__item" th:if="${not #lists.isEmpty(pages)}" th:each="item : ${pages}">
+                    <div class="sl__item__header">
+                        <div>
+                            <img src="/static/images/profile.jpeg" th:src="@{/images/profile.jpeg}" alt="">
+                            <svg viewbox="0 0 110 110">
+                                <circle cx="55" cy="55" r="53" />
+                            </svg>
+                        </div>
+                        <div th:text="${item.register.username}"></div>
+
+                    </div>
+                    <div class="sl__item__img">
+                        <img th:src="|/upload/${item.savedFilename}|" alt="">
+                    </div>
+                    <div class="sl__item__contents">
+                        <div class="sl__item__contents__icon">
+                            <button type="button" class="btn-heart" th:data-id="${item.id}"><i class="far fa-heart"></i></button>
+                        </div>
+
+                        <div class="comments"></div>
+
+                        <div class="sl__item__input">
+                            <input type="text" name="comment" placeholder="댓글 달기...">
+                            <button class="btn-comment">게시</button>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </section>
+    </main>
+
+    <div class="modal-container" style="display: none;">
+        <div class="modal">
+            <button>신고</button>
+            <button>팔로우 취소</button>
+            <button id="cancel" onclick="closePopup()">취소</button>
+        </div>
+    </div>
+
+    <script th:src="@{https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js}"></script>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        var pages = /*[[${pages}]]*/ null;
+        /*]]>*/
+
+        let ready = function() {
+            $(window).scroll(function(e) {
+                e.preventDefault();
+                let scroll = $(window).scrollTop() - ($(document).height() - $(window).height()),
+                    $page = $('input[name=page]'),
+                    pageValue = $page.val();
+
+                if (scroll < 1 && scroll > -1 && $('input[name=hasData]').val() === 'Y') {
+                    pageValue++;
+                    $page.val(pageValue);
+                    getAttachmentsByAjax();
+                }
+            });
+
+            if (!$.isEmptyObject(pages)) {
+                likes(pages.content);
+                drawComments(pages.content);
+            }
+        };
+
+        let safeNullOrEmpty = (parameter) => {
+            return parameter ? parameter : null;
+        };
+
+        let likes = (data) => {
+            if ($.isEmptyObject(data)) return false;
+
+            $.each(data, function(idx, i) {
+                if (!i.postLike) return true;
+
+                let like = i.postLike,
+                    postId = like.attachmentId;
+
+                $('.sl__item__contents').each(function() {
+                    let $this = $(this),
+                        $button = $this.find('.btn-heart'),
+                        $element = $button.find('i'),
+                        id = Number($button.attr('data-id'));
+
+                    if (id !== postId) return true;
+                    handleHeartButton($element);
+                });
+            });
+        };
+
+        let getAttachmentsByAjax = () => {
+
+            $.ajax({
+                url : '/api/index?page=' + $('input[name=page]').val(),
+                contentType : "application/json"
+            }).done(function(result) {
+                if (result.code === 200 && !$.isEmptyObject(result.data)) {
+                    let data = result.data.content;
+                    drawHeartPost(data);
+                    likes(data);
+                }
+            }).fail(function(XMLHttpRequest, textStatus, errorThrown) { // 비동기 통신이 실패할경우 error 콜백으로 들어옵니다.
+                console.log("AJAX 통신 실패.")
+            }).always(function() {});
+        };
+
+        let handleHeartButton = ($parameter) => {
+            if ($parameter.hasClass('active')) {
+                $parameter.removeClass('fas');
+                $parameter.removeClass('active');
+                $parameter.addClass("far");
+            } else {
+                $parameter.addClass('fas');
+                $parameter.addClass('active');
+                $parameter.removeClass("far");
+            }
+        };
+
+        let heart = function(e) {
+            e.preventDefault();
+
+            let $this = $(this),
+                $heart = $this.find('i'),
+                url = '/memberLike/save/',
+                id = $this.data('id');
+
+            if ($heart.hasClass('active'))
+                url = '/memberLike/cancel/'
+
+            $.ajax({
+                url : url + id,
+                type : 'post',
+                contentType : "application/json"
+            }).done(function(result) {
+                if (result.code === 200) handleHeartButton($heart);
+            }).fail(function(XMLHttpRequest, textStatus, errorThrown) { // 비동기 통신이 실패할경우 error 콜백으로 들어옵니다.
+                console.log("AJAX 통신 실패.")
+            }).always(function() {});
+        };
+
+        let comment = function(e) {
+            e.preventDefault();
+            let $comment = $(this).closest('.sl__item__input').find('input[name=comment]'),
+                attachmentId = $(this).closest('.sl__item__contents').find(':button').data('id');
+
+            let params = {
+                comment: safeNullOrEmpty($comment.val()),
+                attachmentId: attachmentId
+            };
+
+            $.ajax({
+                url : '/comment/ajax/save',
+                type : 'post',
+                contentType : "application/json",
+                data: JSON.stringify(params)
+            }).done(function(result) {
+                if (result.code === 200 && !$.isEmptyObject(result.data)) $('.comments').append(maekCommentTag(result.data));
+            }).fail(function(XMLHttpRequest, textStatus, errorThrown) { // 비동기 통신이 실패할경우 error 콜백으로 들어옵니다.
+                console.log("AJAX 통신 실패.")
+            }).always(function() {
+                $comment.val('');
+            });
+        };
+
+        let removeComment = function(e) {
+            e.preventDefault();
+            let $this = $(this);
+
+            let params = {
+                id: $this.data('id')
+            };
+
+            $.ajax({
+                url : '/comment/ajax/remove',
+                type : 'post',
+                contentType : "application/json",
+                data: JSON.stringify(params)
+            }).done(function(result) {
+                if (result.code === 200) $this.closest('.sl__item__contents__comment').remove();
+            }).fail(function(XMLHttpRequest, textStatus, errorThrown) { // 비동기 통신이 실패할경우 error 콜백으로 들어옵니다.
+                console.log("AJAX 통신 실패.")
+            }).always(function() {});
+        };
+
+        let drawHeartPost = (data) => {
+            if ($.isEmptyObject(data)) {
+                $('input[name=hasData]').val('N');
+                return false;
+            }
+
+            $.each(data, function(idx, i) {
+                let tag = '<div class="story-list__item">' +
+                            '<div class="sl__item__header">' +
+                                '<div>' +
+                                    '<img src="/images/profile.jpeg" alt="">' +
+                                    '<svg viewbox="0 0 110 110">' +
+                                        '<circle cx="55" cy="55" r="53" />' +
+                                    '</svg>' +
+                                '</div>' +
+                                '<div>' + i.register.username + '</div>' +
+                            '</div>' +
+
+                            '<div class="sl__item__img">' +
+                                '<img src="/upload/' + i.savedFilename + '" alt="">' +
+                            '</div>' +
+
+                            '<div class="sl__item__contents">' +
+                                '<div class="sl__item__contents__icon">' +
+                                    '<button type="button" class="btn-heart" data-id="' + i.id + '"><i class="far fa-heart"></i></button>' +
+                                '</div>' +
+                                '<div class="sl__item__input">' +
+                                    '<input type="text" placeholder="댓글 달기...">' +
+                                    '<button class="btn-comment">게시</button>' +
+                                '</div>' +
+                        '</div>';
+
+                $('.story-list').append(tag);
+            });
+        };
+
+        let drawComments = function(data) {
+            // 1번 comments 에만 그려지는게 문제임 !
+
+            if ($.isEmptyObject(data)) return false;
+
+            $.each(data, function(idx, i) {
+                if ($.isEmptyObject(i.comments)) return true;
+
+                $.each(i.comments, function(index, c) {
+                    $('.comments').append(maekCommentTag(c));
+                });
+            });
+        };
+
+        let maekCommentTag = (c) => {
+            return '<div class="sl__item__contents__comment">' +
+                        '<p style="display: flex; justify-content: space-between">' +
+                            '<b>' + c.writer.username + '</b>' + c.comment +
+                            '<button class="btn-remove-comment" data-id="' + c.id + '">' +
+                                '<i class="fas fa-times"></i>' +
+                            '</button>' +
+                        '</p>' +
+                    '</div>' + '<br />';
+        };
+
+        $(document).ready(ready)
+            .on('click', '.btn-heart', heart)
+            .on('click', '.btn-comment', comment)
+            .on('click', '.btn-remove-comment', removeComment);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photogram</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css" th:href="@{/css/style.css}">
+    <link rel="stylesheet" type="text/css" href="/static/css/upload.css" th:href="@{/css/upload.css}">
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css"
+        integrity="sha384-AYmEC3Yw5cVb3ZcuHtOA93w35dYTsvhLPVnYs9eStHfGJvOvKxVfELGroGkvsg+p" crossorigin="anonymous" />
+</head>
+
+<body>
+    <header class="header">
+        <div class="container">
+            <a th:href="@{/}" class="logo"><img src="/static/images/logo.jpg" th:src="@{/images/logo.jpg}" alt=""></a>
+            <nav class="navi">
+                <ul class="navi-list">
+                    <li class="navi-item"><a th:href="@{/}"><i class="fas fa-home"></i></a></li>
+                    <li class="navi-item"><a th:href="@{/explor}"><i class="far fa-compass"></i></a></li>
+                    <li class="navi-item"><a th:href="@{/user/profile}"><i class="far fa-user"></i></a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <main>
+            <section class="upload">
+                <div class="upload-top">
+                    <a th:href="@{/}" class="">
+                        <img src="/static/images/logo.jpg" th:src="@{/images/logo.jpg}" alt="">
+                    </a>
+                    <p>사진 업로드</p>
+                </div>
+                <form name="form" method="post" th:action="@{/attachment/upload}" enctype="multipart/form-data">
+                    <div class="upload-form">
+                        <input type="file" name="file" accept="image/*" />
+                        <div class="upload-img">
+                            <img id="profile-image" src="/static/images/profile.jpeg" th:src="@{/images/profile.jpeg}" alt="">
+                        </div>
+                        <div class="upload-form-detail">
+                            <button type="button" class="cta blue" name="upload">업로드</button>
+                        </div>
+                    </div>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <footer>
+        <div class="container">
+            <ul>
+                <li><a href="#a">소개</a></li>
+                <li><a href="#a">블로그</a></li>
+                <li><a href="#a">채용 정보</a></li>
+                <li><a href="#a">도움말</a></li>
+                <li><a href="#a">API</a></li>
+                <li><a href="#a">개인정보처리방침</a></li>
+                <li><a href="#a">약관</a></li>
+                <li><a href="#a">인기 계정</a></li>
+                <li><a href="#a">해시태그</a></li>
+                <li><a href="#a">위치</a></li>
+            </ul>
+            <div class="copy">
+                <p>© 2020 Photogram from There Programing</p>
+            </div>
+        </div>
+    </footer>
+
+    <script th:src="@{https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js}"></script>
+
+    <script th:inline="javascript">
+
+        $('button[name=upload]').on('click', function(e) {
+            e.preventDefault();
+            let $form = $('form[name=form]'),
+                $file = $form.find('input[name=file]');
+
+            if (!$file.val()) {
+                alert('파일 첨부를 해주세요.');
+                $file.click();
+                return false;
+            }
+
+            $form.submit();
+        });
+
+        $('input[name=file]').on('change', function(e) {
+            e.preventDefault();
+            let file = e.target.files[0];
+
+            if (!file.type.match("image.*")) {
+                alert("이미지 파일이 아닙니다.");
+                return false;
+            }
+
+            let reader = new FileReader();
+            reader.onload = (e) => {
+                $('#profile-image').attr("src", e.target.result);
+            }
+
+            reader.readAsDataURL(file);
+        });
+    </script>
+
+</body>
+
+</html>

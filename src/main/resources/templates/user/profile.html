@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photogram</title>
+    <!-- Style -->
+    <link rel="stylesheet" type="text/css" href="/static/css/profile.css" th:href="@{/css/profile.css}">
+    <!-- Fontawesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.8.2/css/all.min.css" />
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <header class="header">
+        <div class="container">
+            <a th:href="@{/}" class="logo"><img src="/static/images/logo.jpg" th:src="@{/images/logo.jpg}" alt=""></a>
+            <nav class="navi">
+                <ul class="navi-list">
+                    <li class="navi-item"><a th:href="@{/}"><i class="fas fa-home"></i></a></li>
+                    <li class="navi-item"><a th:href="@{/explor}"><i class="far fa-compass"></i></a></li>
+                    <li class="navi-item" th:if="${user eq null}"><a th:href="@{/user/profile}"><i class="far fa-user"></i></a></li>
+                    <li class="navi-item" th:if="${user ne null}"><a th:href="@{/user/profile/{id}(id = ${principalId})}"><i class="far fa-user"></i></a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="profile">
+        <input type="hidden" name="id" th:value="${user ne null} ? ${id}" />
+
+        <div class="container">
+            <div class="profile-left">
+                <div class="profile-img-wrap story-border" onclick="popup('.modal-image')">
+                    <img src="/static/images/profile.jpeg" th:src="@{/images/profile.jpeg}" alt="">
+                    <svg viewbox="0 0 110 110">
+                        <circle cx="55" cy="55" r="53" />
+                    </svg>
+                </div>
+            </div>
+            <div class="profile-right">
+                <div class="name-group">
+                    <h2>Programing</h2>
+                    <button class="cta blue" onclick="location.href='/attachment/upload'" th:if="${isMe}">사진등록</button>
+                    <button class="cta btn-subscribe subscribe" th:style="${!isMe and !hasSubscribe} ? 'display:block' : 'display:none'">구독하기</button>
+                    <button class="cta blue btn-subscribe cancel" th:style="${!isMe and hasSubscribe} ? 'display:block' : 'display:none'">구독취소</button>
+                    <button class="modi" onclick="popup('.modal-info')"><i class="fas fa-cog"></i></button>
+                </div>
+                <div class="follow">
+                    <ul>
+                        <li><a href="">게시물<span th:text="${user eq null} ? 0 : ${user.attachments.size()}"></span></a></li>
+                        <li><a href="javascript:;" id="btn-subscribe-info">구독정보<span th:text="${user eq null} ? 0 : ${subscribes.size()}"></span></a> </li>
+                    </ul>
+                </div>
+                <div class="state">
+                    <h4 th:text="${user ne null} ? ${user.username}"></h4>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="gallery">
+        <div class="container">
+            <div class="controller">
+            </div>
+        </div>
+    </div>
+
+    <section id="tab-content" th:if="${user ne null}">
+        <div class="container">
+            <div id="tab-1-content" class="tab-content-item show">
+                <div class="tab-1-content-inner">
+                    <div class="img-box" th:if="${not #lists.isEmpty(user.attachments)}" th:each="item : ${user.attachments}">
+                        <a href=""><img th:src="|/upload/${item.savedFilename}|" alt=""></a>
+                        <div class="comment">
+                            <a href="#a" class=""><i class="fas fa-heart"></i><span>36</span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+      <footer>
+        <div class="container">
+            <ul>
+                <li><a href="#a">소개</a></li>
+                <li><a href="#a">블로그</a></li>
+                <li><a href="#a">채용 정보</a></li>
+                <li><a href="#a">도움말</a></li>
+                <li><a href="#a">API</a></li>
+                <li><a href="#a">개인정보처리방침</a></li>
+                <li><a href="#a">약관</a></li>
+                <li><a href="#a">인기 계정</a></li>
+                <li><a href="#a">해시태그</a></li>
+                <li><a href="#a">위치</a></li>
+            </ul>
+            <div class="copy">
+                <p>© 2020 Photogram from There Programing</p>
+            </div>
+        </div>
+    </footer>
+
+    <div class="modal-info">
+        <div class="modal">
+            <button onclick="location.href='/user/modify'">회원정보 변경</button>
+            <button onclick="location.href='/logout'">로그아웃</button>
+            <button onclick="closePopup('.modal-info')">취소</button>
+        </div>
+    </div>
+
+    <div class="modal-image">
+        <div class="modal">
+            <p>프로필 사진 바꾸기</p>
+            <button type="button" id="btn-upload-profile">사진 업로드</button>
+            <button onclick="closePopup('.modal-image')">취소</button>
+        </div>
+    </div>
+
+    <div class="modal-follow">
+        <div class="follower">
+            <div class="follower-header">
+                <span>구독정보</span>
+                <button onclick="closeFollow()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="follower-list"></div>
+        </div>
+    </div>
+
+    <!--
+    <form name="form" method="post" th:action="@{/attachment/upload}" enctype="multipart/form-data">
+        <input type="file" name="file" accept="image/*" />
+    </form>
+    -->
+
+    <script src="/static/js/profile.js" th:src="@{/js/profile.js}"></script>
+
+    <script th:src="@{https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js}"></script>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        var isMe = /*[[${isMe}]]*/ null;
+        /*]]>*/
+
+        let subscribeButtonHandle = (parameter) => {
+            if (parameter) {
+                $('button.subscribe').css({'display': 'block'});
+                $('button.cancel').css({'display' : 'none'});
+            } else {
+                $('button.cancel').css({'display' : 'block'});
+                $('button.subscribe').css({'display' : 'none'});
+            }
+        };
+
+        let Unfollower = function(e) {
+            e.preventDefault();
+
+            $('.un-follower').prop('disabled', true);
+
+            $.ajax({
+                url : '/memberFollow/cancel/' + $(this).data('id'),
+                type : "post",
+                contentType : "application/json"
+            }).done(function(result) {
+                if (result.code === 200) {
+                    $('.un-follower').prop('disabled', false);
+                    location.reload();
+                }
+            }).fail(function(XMLHttpRequest, textStatus, errorThrown) { // 비동기 통신이 실패할경우 error 콜백으로 들어옵니다.
+                console.log("AJAX 통신 실패.")
+            }).always(function() {});
+        };
+
+        $('.btn-subscribe').on('click', function(e) {
+            e.preventDefault();
+
+            let url = '/memberFollow/save/',
+                id = $('input[name=id]').val(),
+                hasClass = $(this).hasClass('cancel');
+
+            if (hasClass) url = '/memberFollow/cancel/';
+
+            $('.btn-subscribe').prop('disabled', true);
+
+            $.ajax({
+                url : url + id,
+                type : "post",
+                contentType : "application/json"
+            }).done(function(result) {
+                if (result.code === 200) {
+                    $('.btn-subscribe').prop('disabled', false);
+                    subscribeButtonHandle(hasClass);
+                }
+            }).fail(function(XMLHttpRequest, textStatus, errorThrown) { // 비동기 통신이 실패할경우 error 콜백으로 들어옵니다.
+                console.log("AJAX 통신 실패.")
+            }).always(function() {});
+        });
+
+        $('#btn-subscribe-info').on('click', function(e) {
+            e.preventDefault();
+            $(".modal-follow").css({'display': 'flex'});
+
+            $.ajax({
+                url : '/memberFollow/' + $('input[name=id]').val(),
+                type : "post"
+            }).done(function(result) {
+                if (result.code === 200 && !$.isEmptyObject(result.data))
+                    drawFollowers(result.data);
+            }).fail(function(XMLHttpRequest, textStatus, errorThrown) { // 비동기 통신이 실패할경우 error 콜백으로 들어옵니다.
+                console.log("AJAX 통신 실패.")
+            }).always(function() {});
+        });
+
+        $('#btn-upload-profile').on('click', function(e) {
+            e.preventDefault();
+            $('input:file').click();
+        });
+
+        $('input[name=file]').on('change', function(e) {
+            e.preventDefault();
+            let file = e.target.files[0];
+
+            if (!file.type.match("image.*")) {
+                alert("이미지 파일이 아닙니다.");
+                return false;
+            }
+
+            let reader = new FileReader();
+            reader.onload = (e) => {
+                $('.profile-img-wrap').find('img').attr("src", e.target.result);
+            }
+
+            reader.readAsDataURL(file);
+        });
+
+        let drawFollowers = function(data) {
+            let $followers = $('.follower-list');
+            console.log(data);
+
+            $followers.empty();
+
+            if ($.isEmptyObject(data)) return false;
+
+            $.each(data, function(idx, i) {
+                let follower = i.follower;
+
+                let tag = '<div class="follower__item">' +
+                            '<div class="follower__img">' +
+                                '<img src="/images/profile.jpeg" alt="" />' +
+                            '</div>' +
+                            '<div class="follower__text">' +
+                                '<h2>' + follower.username + '</h2>' +
+                            '</div>' +
+                            '<div class="follower__btn">' +
+                                '<button type="button" class="un-follower" data-id="' + follower.id + '">구독취소' + '</button>' +
+                            '</div>' +
+                        '</div>';
+
+                $followers.append(tag);
+            });
+        };
+
+        $(document).ready()
+            .on('click', '.un-follower', Unfollower);
+    </script>
+</body>
+
+</html>

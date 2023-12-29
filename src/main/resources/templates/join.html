@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photogram</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css" th:href="@{/css/style.css}">
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" integrity="sha384-AYmEC3Yw5cVb3ZcuHtOA93w35dYTsvhLPVnYs9eStHfGJvOvKxVfELGroGkvsg+p" crossorigin="anonymous" />
+</head>
+
+<body>
+    <div class="container">
+        <main>
+            <section class="login">
+
+                <article class="login__form__container">
+                    <div class="login__form">
+                        <h1><img src="/static/images/logo.jpg" th:src="@{/images/logo.jpg}" alt=""></h1>
+
+                        <form th:action="@{/auth/sign-up}" method="post">
+                            <div class="login__input">
+                                <input type="text" name="username" placeholder="사용자ID">
+                                <input type="text" name="name" placeholder="성명">
+                                <input type="text" name="email" placeholder="이메일 주소">
+                                <input type="password" name="password" id="password" placeholder="비밀번호">
+                                <button>가입</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="login__register">
+                        <span>계정이 있으신가요?</span>
+                        <a th:href="@{/auth/sign-in}">로그인</a>
+                    </div>
+                </article>
+            </section>
+        </main>
+    </div>
+</body>
+
+</html>
